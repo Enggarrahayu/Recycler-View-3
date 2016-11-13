@@ -1,5 +1,7 @@
 package id.sch.smktelkom_mlg.learn.recyclerview3.adapter;
 
+import android.content.Context;
+import android.net.Uri;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -19,11 +21,22 @@ import id.sch.smktelkom_mlg.learn.recyclerview3.model.Hotel;
 public class HotelAdapter extends RecyclerView.Adapter<HotelAdapter.ViewHolder>
 {
     ArrayList<Hotel> hotelList;
+    IHotelAdapter mIHotelAdapter;
 
-    public HotelAdapter(ArrayList<Hotel> hotelList)
+    public HotelAdapter(ArrayList<Hotel> mList) {
+    }
+
+    public  interface  IHotelAdapter
+    {
+        void doClick(int pos);
+    }
+
+    public HotelAdapter(Context context, ArrayList<Hotel> hotelList)
     {
         this.hotelList = hotelList;
+        mIHotelAdapter = (IHotelAdapter) context;
     }
+
     @Override
     public ViewHolder onCreateViewHolder(ViewGroup parent, int viewType)
     {
@@ -38,7 +51,7 @@ public class HotelAdapter extends RecyclerView.Adapter<HotelAdapter.ViewHolder>
         Hotel hotel = hotelList.get(position);
         holder.tvJudul.setText(hotel.judul);
         holder.tvDeskripsi.setText(hotel.deskripsi);
-        holder.ivFoto.setImageDrawable(hotel.foto);
+        holder.ivFoto.setImageURI(Uri.parse(hotel.foto));
     }
 
     @Override
@@ -55,9 +68,19 @@ public class HotelAdapter extends RecyclerView.Adapter<HotelAdapter.ViewHolder>
         TextView tvJudul;
         TextView tvDeskripsi;
 
+
         public ViewHolder(View itemView)
         {
             super(itemView);
+            itemView.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view)
+                {
+                    mIHotelAdapter.doClick(getAdapterPosition());
+                }
+            }
+         );
+
             ivFoto = (ImageView) itemView.findViewById(R.id.imageView);
             tvJudul = (TextView) itemView.findViewById(R.id.textViewJudul);
             tvDeskripsi = (TextView) itemView.findViewById(R.id.textViewDeskripsi);
