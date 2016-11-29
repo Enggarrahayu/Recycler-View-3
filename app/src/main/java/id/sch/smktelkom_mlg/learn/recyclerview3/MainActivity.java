@@ -7,9 +7,11 @@ import android.content.res.TypedArray;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
+import android.support.v4.view.MenuItemCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.support.v7.widget.SearchView;
 import android.support.v7.widget.Toolbar;
 import android.view.View;
 import android.view.Menu;
@@ -24,11 +26,14 @@ public class MainActivity extends AppCompatActivity implements HotelAdapter.IHot
 {
     public static final String HOTEL = "hotel";
     public static final int REQUEST_CODE_ADD = 88;
-    public static final int REQUEST_CODE = 88;
     private static final int REQUEST_CODE_EDIT =99 ;
     ArrayList<Hotel> mList = new ArrayList<>();
     HotelAdapter mAadapter;
     int itemPos;
+    ArrayList<Hotel> mListAll = new ArrayList<>();
+    boolean isPiltered;
+    ArrayList<Integer> mListMapFilter = new ArrayList<>();
+    String mQuery;
 
     @Override
     protected  void onActivityResult(int requestCode, int resultCode, Intent data)
@@ -38,13 +43,17 @@ public class MainActivity extends AppCompatActivity implements HotelAdapter.IHot
         {
             Hotel hotel = (Hotel) data.getSerializableExtra(HOTEL);
             mList.add(hotel);
-            mAadapter.notifyDataSetChanged();
+            if (isPiltered) mList.add(hotel);
+            doFilter(mQuery);
+            //mAadapter.notifyDataSetChanged();
         }
         else if (requestCode == REQUEST_CODE_EDIT && resultCode == RESULT_OK)
         {
             Hotel hotel = (Hotel) data.getSerializableExtra(HOTEL);
             mList.remove(itemPos);
+            if (isPiltered) mList.remove(mListMapFilter.get(itemPos).intValue());
             mList.add(itemPos, hotel);
+            if (isPiltered) mList.add(mListMapFilter.get(itemPos), hotel);
             mAadapter.notifyDataSetChanged();
         }
     }
@@ -112,10 +121,65 @@ public class MainActivity extends AppCompatActivity implements HotelAdapter.IHot
     }
 
     @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
+    public boolean onCreateOptionsMenu(Menu menu)
+    {
         // Inflate the menu; this adds items to the action bar if it is present.
         getMenuInflater().inflate(R.menu.menu_main, menu);
+        MenuItem searchItem = menu.findItem(R.id.actionsearch);
+        SearchView searchView  = (SearchView)
+        MenuItemCompat.getActionView(searchItem);
+
+        searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener()
+        {
+            @Override
+            public boolean onQueryTextSubmit(String query)
+            {
+                return false;
+            }
+
+            @Override
+            public boolean onQueryTextChange(String newText)
+            {
+                mQuery = newText.toLowerCase();
+                doFilter(mQuery);
+                return true;
+            }
+        });
         return true;
+    }
+
+    private void doFilter(String query)
+    {
+        if (!isPiltered)
+        {
+            mListAll.clear();
+            mListAll.addAll(mList);
+            isPiltered = true;
+        }
+
+        mList.clear();
+        if (query==null|| query.isEmpty())
+        {
+            mList.addAll(mListAll);
+            isPiltered = false;
+        }else
+        {
+            mListMapFilter.clear();
+            for (int i = 0; 1< mListAll.size(); i++)
+            {
+                Hotel hotel = mListAll.get(i);
+                if (hotel.judul.toLowerCase().contains(query) ||
+                     hotel.deskripsi.toLowerCase().contains(query) ||
+                        hotel.lokasi.toLowerCase().contains(query))
+                {
+                    mList.add(hotel);
+                    mListMapFilter.add(i);
+
+                }
+            }
+        }
+        mAadapter.notifyDataSetChanged();
+
     }
 
     @Override
@@ -157,6 +221,7 @@ public class MainActivity extends AppCompatActivity implements HotelAdapter.IHot
         itemPos = pos;
         final Hotel hotel = mList.get(pos);
         mList.remove(itemPos);
+        if (isPiltered) mList.remove(mListMapFilter.get(itemPos).intValue());
         mAadapter.notifyDataSetChanged();
         Snackbar.make(findViewById(R.id.fab), hotel.judul+ "Terhapus", Snackbar.LENGTH_LONG)
                 .setAction("UNDO", new View.OnClickListener() {
@@ -164,6 +229,7 @@ public class MainActivity extends AppCompatActivity implements HotelAdapter.IHot
                     public void onClick(View view)
                     {
                         mList.add(itemPos, hotel);
+                        if (isPiltered) mList.add(mListMapFilter.get(itemPos), hotel);
                         mAadapter.notifyDataSetChanged();
                     }
                 }) .show();
